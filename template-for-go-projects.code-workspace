@@ -10,6 +10,10 @@
 		"go.lintFlags": ["--fast"],
 		"go.testTimeout": "60s",
 		"go.lintOnSave": "package",
+		"go.useLanguageServer": true,
+		"gopls": {
+			"formatting.gofumpt": true,
+		},
 		"launch": {
 			"version": "0.2.0",
 			"configurations": [

@@ -50,6 +50,27 @@ run:
   timeout: 5m
 
 linters-settings:
+  wrapcheck:
+    # See https://github.com/tomarrell/wrapcheck#configuration for more information.
+    ignoreSigs:
+    - .Errorf(
+    - errors.New(
+    - errors.Unwrap(
+    - errors.Join(
+    - .Wrap(
+    - .Wrapf(
+    - .WithMessage(
+    - .WithMessagef(
+    - .WithStack(
+  depguard:
+    rules:
+      prevent_unmaintained_packages:
+        list-mode: lax # allow unless explicitely denied
+        files:
+          - $all
+          - "!$test"
+        allow:
+          - $gostd
   forbidigo:
     forbid:
       - fmt.Print.* # usually just used for debugging purpose
