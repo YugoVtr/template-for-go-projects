@@ -12,6 +12,7 @@ import (
 	"github.com/yugovtr/template-for-go-projects/cli/errwrap"
 )
 
+// Ignore is a map that contains directories and files in template to be ignored during setup.
 var Ignore = map[string]struct{}{
 	"cli":     {},
 	"bin":     {},
@@ -26,6 +27,9 @@ var (
 	ErrNoGoMod          = errors.New("go.mod does not exist in the template directory")
 )
 
+// Setup sets up a new project by copying the template files to the specified project path.
+// Template directory must contain a go.mod file.
+// Project name is used as module name in go.mod and as a name for the workspace file.
 func Setup(projectName, projectPath, templateDir string) error {
 	logger := slog.New(slog.Default().Handler())
 	logger.Info("setup", "name", projectName, "path", projectPath, "template", templateDir)
@@ -44,6 +48,7 @@ func Setup(projectName, projectPath, templateDir string) error {
 	return AddNameToProject(projectName, projectPath)
 }
 
+// DirExists checks if a directory exists at the specified path.
 func DirExists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
@@ -51,6 +56,7 @@ func DirExists(path string) bool {
 	return true
 }
 
+// CopyTemplateToProject copies the files and directories from the template directory to the specified project path.
 func CopyTemplateToProject(templateDir, projectPath string) error {
 	return filepath.Walk(templateDir, func(path string, info os.FileInfo, err error) error { //nolint:wrapcheck
 		if err != nil {
@@ -75,6 +81,7 @@ func CopyTemplateToProject(templateDir, projectPath string) error {
 	})
 }
 
+// CopyFile copies a file from the source path to the destination path.
 func CopyFile(path, dest string) error {
 	sourceFile, err := os.Open(path)
 	if err != nil {
@@ -94,6 +101,7 @@ func CopyFile(path, dest string) error {
 	return nil
 }
 
+// AddNameToProject renames the code workspace file and updates the module name in the go.mod file for a given project.
 func AddNameToProject(projectName, projectPath string) error {
 	const (
 		ext                   = ".code-workspace"
