@@ -11,10 +11,12 @@ import (
 //go:embed template/*
 var templates embed.FS
 
+const defaultGoVersion = "1.22.0"
+
 func main() {
 	projectName := flag.String("name", "", "Name of the project")
 	projectPath := flag.String("path", "", "Path to the project")
-	goversion := flag.String("goversion", "1.22.0", "Go version to use in the project")
+	goversion := flag.String("goversion", defaultGoVersion, "Go version to use in the project")
 	flag.Parse()
 
 	if *projectName == "" || *projectPath == "" {
@@ -22,8 +24,11 @@ func main() {
 		return
 	}
 
-	templater := cli.Templater{FileReader: templates}
-	if err := templater.NewProject(*projectName, *projectPath, *goversion); err != nil {
-		slog.Error("setup failed", "error", err)
+	templater, err := cli.NewProjectFromTemplate(templates)
+	if err != nil {
+		slog.Error("could not create project from template", "error", err)
+	}
+	if err := templater.Generate(*projectName, *projectPath, *goversion); err != nil {
+		slog.Error("could not generate project", "error", err)
 	}
 }

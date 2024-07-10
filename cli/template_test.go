@@ -3,7 +3,6 @@ package cli_test
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,7 +25,7 @@ func (test T) GenerateRandomName(size int) string {
 	return hex.EncodeToString(bytes)
 }
 
-func TestTemplater_NewProject(t *testing.T) {
+func TestNewProjectFromTemplate(t *testing.T) {
 	test := T{t}
 
 	type arg struct {
@@ -49,25 +48,24 @@ func TestTemplater_NewProject(t *testing.T) {
 				assert.ErrorIs(t, err, cli.ErrTemplateDir)
 			},
 		},
-		{
-			when:       "create project successfully",
-			fileReader: FileReader(".."),
-			name:       test.GenerateRandomName(8),
-			path:       test.TempDir(),
-			assert: func(t *testing.T, err error, testCase arg) {
-				assert.Nil(t, err)
-				AssertProject(test.T, testCase.name, testCase.path)
-			},
-		},
 	}
-
 	for _, testCase := range testCases {
 		t.Run(testCase.when, func(t *testing.T) {
-			templater := cli.Templater{FileReader: testCase.fileReader}
-			err := templater.NewProject(testCase.name, testCase.path, "1.22")
+			_, err := cli.NewProjectFromTemplate(testCase.fileReader)
 			testCase.assert(t, err, testCase)
 		})
 	}
+}
+
+func TestTemplater_Generate(t *testing.T) {
+	test := T{t}
+	templater, err := cli.NewProjectFromTemplate(FileReader(".."))
+	require.NoError(t, err)
+
+	name, path := test.GenerateRandomName(8), test.TempDir()
+	templater.Generate(name, path, "1.22")
+	assert.Nil(t, err)
+	AssertProject(test.T, name, path)
 }
 
 func AssertProject(t *testing.T, name, path string) {
@@ -88,17 +86,4 @@ func AssertProject(t *testing.T, name, path string) {
 		require.NoError(t, err)
 		assert.NotEmpty(t, file)
 	}
-}
-
-type FileReader string
-
-// Interface guard
-var _ cli.FileReader = FileReader("")
-
-func (f FileReader) ReadFile(name string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(string(f), name))
-}
-
-func (f FileReader) ReadDir(name string) ([]fs.DirEntry, error) {
-	return os.ReadDir(filepath.Join(string(f), name))
 }

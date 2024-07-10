@@ -20,53 +20,50 @@ var (
 	ErrNilFileReader = errors.New("file reader is nil")
 )
 
-type FileReader interface {
-	ReadFile(name string) ([]byte, error)
-	ReadDir(name string) ([]fs.DirEntry, error)
-}
-
 type Templater struct {
-	FileReader
+	fileReader       FileReader
+	templatesEntries []fs.DirEntry
 }
 
-type details struct {
-	Module,
-	GOVersion string
-}
-
-func (t *Templater) NewProject(name, path, goversion string) error {
-	if t.FileReader == nil {
-		return ErrNilFileReader
+func NewProjectFromTemplate(fileReader FileReader) (t Templater, err error) {
+	if fileReader == nil {
+		return t, ErrNilFileReader
 	}
-	templates, err := t.ReadDir(templateDir)
+	templates, err := fileReader.ReadDir(templateDir)
 	if err != nil {
-		return errors.Join(ErrTemplateDir, err)
+		return t, errors.Join(ErrTemplateDir, err)
 	}
-	projectDetails := details{
-		Module:    name,
-		GOVersion: goversion,
-	}
-	for _, template := range templates {
+	return Templater{
+		fileReader:       fileReader,
+		templatesEntries: templates,
+	}, nil
+}
+
+func (t *Templater) Generate(name, path, goversion string) error {
+	for _, template := range t.templatesEntries {
 		name := template.Name()
 		destFile := t.createDestinationFile(name, path)
 		defer destFile.Close()
 		content := t.readTemplate(name)
-		content = t.bindDetails(content, projectDetails)
+		content = t.bindDetails(content, map[string]any{
+			"Module":    name,
+			"GOVersion": goversion,
+		})
 		_, _ = destFile.Write(content)
 	}
 	return nil
 }
 
-func (t *Templater) bindDetails(content []byte, d details) []byte {
-	tmpl, _ := template.New(d.Module).Parse(string(content))
+func (t *Templater) bindDetails(content []byte, details map[string]any) []byte {
+	tmpl, _ := template.New("details").Parse(string(content))
 	var buf bytes.Buffer
-	_ = tmpl.Execute(&buf, d)
+	_ = tmpl.Execute(&buf, details)
 	return buf.Bytes()
 }
 
 func (t *Templater) readTemplate(name string) []byte {
 	fileName := filepath.Join(templateDir, name)
-	content, _ := t.ReadFile(fileName)
+	content, _ := t.fileReader.ReadFile(fileName)
 	return content
 }
 
