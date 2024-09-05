@@ -11,7 +11,7 @@ import (
 //go:embed template/*
 var templates embed.FS
 
-const defaultGoVersion = "1.22.0"
+const defaultGoVersion = "1.23.0"
 
 func main() {
 	projectName := flag.String("name", "", "Name of the project")
